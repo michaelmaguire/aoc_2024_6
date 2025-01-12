@@ -145,6 +145,7 @@ trait Obstacle {
     fn width(&self) -> usize;
     fn in_bounds(&self, x: usize, y: usize) -> bool;
     fn is_obstacle(&self, x: usize, y: usize ) -> bool;
+    fn is_guard(&self, x: usize, y: usize ) -> bool;
     }
 
 impl Obstacle for MapMatrix {
@@ -168,7 +169,10 @@ impl Obstacle for MapMatrix {
         x < self.width() && y < self.height()
     }
     fn is_obstacle(&self, x: usize, y: usize ) -> bool {
-        self.get_char(x, y) == '#'
+        self.get_char(x, y) == '#' || self.get_char(x, y) == 'O'
+    }
+    fn is_guard(&self, x: usize, y: usize ) -> bool {
+        is_guard(self.get_char(x, y)).is_some()
     }
 }
 
@@ -217,7 +221,7 @@ impl MapMatrix {
 impl Clone for MapMatrix {
     fn clone(&self) -> Self {
         let mut matrix = Vec::new();
-        for r in 1 .. self.matrix.len() {
+        for r in 0 .. self.matrix.len() {
             matrix.push( self.matrix[r].clone() );
         }
         Self { matrix }
@@ -266,24 +270,47 @@ fn main() {
 
     if let Ok(lines) = read_lines("./src/input.txt") {
 
-        let mut map_matrix = MapMatrix::new();
+        let mut input_map_matrix = MapMatrix::new();
  
         // Consumes the iterator, returns an ( Optional) String
         for line in lines.flatten() {
             let characters:Vec<char> = line.chars().collect();
-            map_matrix.push(characters);
+            input_map_matrix.push(characters);
         }
 
-        println!("\nmap_matrix: \n{}", map_matrix);
+        println!("\ninput_map_matrix: \n{}", input_map_matrix);
 
-        match simulate_guard(&mut map_matrix) {
-            GuardResult::MovedOffMap => println!("Guard moved off map"),
-            GuardResult::InLoop => println!("Guard in loop"),
+        // Part 1
+        let mut cloned_map_matrix = input_map_matrix.clone();
+        println!("\ncloned_map_matrix: \n{}", cloned_map_matrix);
+        match simulate_guard(&mut cloned_map_matrix) {
+            GuardResult::MovedOffMap => println!("Guard moved off the map."),
+            GuardResult::InLoop => println!("Guard is in a loop."),
         }
 
-        println!("\nFINAL map_matrix: \n{}", map_matrix);
+        println!("\nFINAL part 1 map_matrix: \n{}", cloned_map_matrix);
+        println!("Number of loop guard visited spaces: {}", cloned_map_matrix.count_guard_spaces());
 
-        println!("Number of guard visited spaces: {}", map_matrix.count_guard_spaces());
+        // Part 2
+        let mut loops_found : usize = 0;
+        for block_y in 0..input_map_matrix.height() {
+            for block_x in 0..input_map_matrix.width() {
+
+                let mut cloned_map_matrix = input_map_matrix.clone();
+
+                if ! cloned_map_matrix.is_obstacle(block_x, block_y) && ! cloned_map_matrix.is_guard(block_x, block_y) {
+                    // Set a new temporary obstacle.
+                    cloned_map_matrix.set_char(block_x, block_y, 'O');
+                    match simulate_guard(&mut cloned_map_matrix) {
+                        GuardResult::MovedOffMap => (),
+                        GuardResult::InLoop => loops_found += 1,
+                    }
+                }
+            }
+        }
+
+
+        println!("Number of loop possible guard loops: {loops_found}");
     }
 }
 
