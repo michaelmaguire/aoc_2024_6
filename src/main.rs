@@ -66,6 +66,14 @@ impl fmt::Display for Guard {
     }
 }
 
+enum GuardResult {
+    MovedNormally,
+    MovedOffMap,
+    InLoop,
+    GuardBlocked,
+}
+
+
 impl Guard {
     fn advance_coords(&self) -> (usize, usize){
         let (new_x, new_y) = match self.orientation {
@@ -77,37 +85,48 @@ impl Guard {
         (new_x, new_y)
     }
 
-    fn rotate(&mut self) {
-        self.orientation = self.orientation.rotate();
-    }
-
     // As termination condition, returns same position and orientation if we cannot move or we went off the map.
-    fn move_guard(self, map_matrix: &MapMatrix) -> Self {
+    fn move_guard(&mut self, map_matrix: &MapMatrix) -> GuardResult {
         let (new_x, new_y) = self.advance_coords();
 
         if map_matrix.in_bounds(new_x, new_y) {
             // new coordinates are within the map boundaries, see if we can move there.
             if ! map_matrix.is_obstacle(new_x, new_y) {
-                // Return new position and orientation.
-                Guard { x: new_x, y: new_y, orientation: self.orientation }
+                self.x = new_x;
+                self.y = new_y;
+                return GuardResult::MovedNormally;
+            } else if let Some(orientation) =  is_guard(map_matrix.get_char(new_x, new_y)) {
+                if orientation == self.orientation {
+                    return GuardResult::InLoop;
+                } else {
+                    // We're passing over an already checked square but in a different direction.
+                    self.x = new_x;
+                    self.y = new_y;
+                    return GuardResult::MovedNormally;
+                }
             } else {
-                // We are in map but would run into an obstacle, so changing orientation of original and advancing works.
+                // We are in map but would run into an obstacle, see if changing orientation of original and advancing works.
+                let mut tentative_orientation = self.orientation;
                 for _ in 0..3 {
+                    tentative_orientation = tentative_orientation.rotate();
                     let mut tentative_new_guard = self.clone();
-                    tentative_new_guard.rotate();
+                    tentative_new_guard.orientation = tentative_orientation;
                     let ( new_x, new_y ) = tentative_new_guard.advance_coords();
                     tentative_new_guard.x = new_x;
                     tentative_new_guard.y = new_y;
                     if map_matrix.in_bounds(tentative_new_guard.x, tentative_new_guard.y) && ! map_matrix.is_obstacle(tentative_new_guard.x, tentative_new_guard.y)  {
-                        return tentative_new_guard;
+                        self.x = new_x;
+                        self.y = new_y;
+                        self.orientation = tentative_new_guard.orientation;
+                        return GuardResult::MovedNormally;
                     }
                 }
                 // We tried all orientations and none worked, so return Guard unchanged and indication to stop.
-                self
+                return GuardResult::GuardBlocked;
             }
         } else {
             // We went off the map, so return Guard unchanged and indication to stop.
-            self
+            return GuardResult::MovedOffMap;
         }
     }
 }
@@ -228,35 +247,28 @@ impl Clone for MapMatrix {
     }    
 }
 
-enum GuardResult {
-    MovedOffMap,
-    InLoop,
-}
-
 fn simulate_guard(map_matrix: &mut MapMatrix) -> GuardResult {
 
     let mut the_guard = map_matrix.find_guard().unwrap();
 
-    let max_allowed_iterations = 10 * map_matrix.height() * map_matrix.width();
-    let mut iterations: usize = 0;
+    let mut loop_counter: usize = 0;
+    let max_loop_iterations = 100 * map_matrix.height() * map_matrix.width();
     loop {
         //println!("Analyzing guard: {the_guard}");
         // Add your analysis logic here
-        let new_guard = the_guard.move_guard(&map_matrix);
-        if new_guard != the_guard {
-            //println!("Guard moved from {} to {}", the_guard, new_guard);
-            // Mark where we visited.
-            map_matrix.set_char(new_guard.x, new_guard.y, new_guard.orientation.to_char());
-            iterations += 1;
-            if iterations > max_allowed_iterations {
-                //println!("Guard did not stop after {} iterations", max_allowed_iterations);
-                return GuardResult::InLoop;
-            }                
-        } else {
-            //println!("Guard did not move");
-            return GuardResult::MovedOffMap;
+        match the_guard.move_guard(&map_matrix) {
+            GuardResult::MovedNormally => {
+                map_matrix.set_char(the_guard.x, the_guard.y, the_guard.orientation.to_char());
+            }
+            GuardResult::MovedOffMap => return GuardResult::MovedOffMap,
+            GuardResult::InLoop => return GuardResult::InLoop,
+            GuardResult::GuardBlocked => return GuardResult::GuardBlocked,
         }
-        the_guard = new_guard;
+
+        loop_counter += 1;
+        if loop_counter > max_loop_iterations {
+            return GuardResult::InLoop;
+        }
         //println!("\nmap_matrix: \n{}", map_matrix);
     }
 
@@ -285,10 +297,12 @@ fn main() {
         match simulate_guard(&mut cloned_map_matrix) {
             GuardResult::MovedOffMap => println!("Guard moved off the map."),
             GuardResult::InLoop => println!("Guard is in a loop."),
+            GuardResult::GuardBlocked => println!("NOT EXPECTED given problem assumptions: Guard is blocked."),
+            GuardResult::MovedNormally => println!("NOT EXPECTED because of loop in simulate_guard: Guard moved normally."),
         }
 
         println!("\nFINAL part 1 map_matrix: \n{}", cloned_map_matrix);
-        println!("Part 1: Number of loop guard visited spaces: {}", cloned_map_matrix.count_guard_spaces());
+        println!("Part 1: Number of guard visited spaces: {}", cloned_map_matrix.count_guard_spaces());
 
         // Part 2
         let mut loops_found : usize = 0;
@@ -300,13 +314,19 @@ fn main() {
                 if ! cloned_map_matrix.is_obstacle(block_x, block_y) && ! cloned_map_matrix.is_guard(block_x, block_y) {
                     // Set a new temporary obstacle.
                     cloned_map_matrix.set_char(block_x, block_y, 'O');
+
+                    //println!("Checking for loop start)\n{}", cloned_map_matrix);
                     match simulate_guard(&mut cloned_map_matrix) {
                         GuardResult::MovedOffMap => (),
                         GuardResult::InLoop => {
                             loops_found += 1;
                             //println!("Loop found at ({}, {})\n {}", block_x, block_y, cloned_map_matrix);
-                        }
+                        },
+                        GuardResult::GuardBlocked => println!("NOT EXPECTED given problem assumptions: Guard is blocked."),
+                        GuardResult::MovedNormally => println!("NOT EXPECTED because of loop in simulate_guard: Guard moved normally."),
                     }
+                    //println!("Checking for loop end)\n{}", cloned_map_matrix);
+
                 }
             }
         }
