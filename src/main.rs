@@ -237,7 +237,7 @@ fn simulate_guard(map_matrix: &mut MapMatrix) -> GuardResult {
 
     let mut the_guard = map_matrix.find_guard().unwrap();
 
-    let max_allowed_iterations = map_matrix.height() * map_matrix.width();
+    let max_allowed_iterations = 10 * map_matrix.height() * map_matrix.width();
     let mut iterations: usize = 0;
     loop {
         //println!("Analyzing guard: {the_guard}");
