@@ -282,14 +282,13 @@ fn main() {
 
         // Part 1
         let mut cloned_map_matrix = input_map_matrix.clone();
-        println!("\ncloned_map_matrix: \n{}", cloned_map_matrix);
         match simulate_guard(&mut cloned_map_matrix) {
             GuardResult::MovedOffMap => println!("Guard moved off the map."),
             GuardResult::InLoop => println!("Guard is in a loop."),
         }
 
         println!("\nFINAL part 1 map_matrix: \n{}", cloned_map_matrix);
-        println!("Number of loop guard visited spaces: {}", cloned_map_matrix.count_guard_spaces());
+        println!("Part 1: Number of loop guard visited spaces: {}", cloned_map_matrix.count_guard_spaces());
 
         // Part 2
         let mut loops_found : usize = 0;
@@ -305,7 +304,7 @@ fn main() {
                         GuardResult::MovedOffMap => (),
                         GuardResult::InLoop => {
                             loops_found += 1;
-                            println!("Loop found at ({}, {})\n {}", block_x, block_y, cloned_map_matrix);
+                            //println!("Loop found at ({}, {})\n {}", block_x, block_y, cloned_map_matrix);
                         }
                     }
                 }
@@ -313,7 +312,7 @@ fn main() {
         }
 
 
-        println!("Number of loop possible guard loops: {loops_found}");
+        println!("Part 2: Number of loop possible guard loops: {loops_found}");
     }
 }
 
