@@ -243,7 +243,7 @@ fn main() {
         println!("Guard: {the_guard}");
         
         loop {
-            println!("Analyzing guard: {the_guard}");
+            //println!("Analyzing guard: {the_guard}");
             // Add your analysis logic here
             let new_guard = the_guard.move_guard(&map_matrix);
             if new_guard != the_guard {
@@ -257,7 +257,7 @@ fn main() {
 
             the_guard = new_guard;
 
-            println!("\nmap_matrix: \n{}", map_matrix);
+            //println!("\nmap_matrix: \n{}", map_matrix);
 
         }
 
