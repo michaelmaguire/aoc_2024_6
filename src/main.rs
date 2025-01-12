@@ -91,9 +91,9 @@ impl Guard {
                 // Return new position and orientation.
                 Guard { x: new_x, y: new_y, orientation: self.orientation }
             } else {
-                // We are in map but would ry into an obstacle, so changing orientation of original and advancing works.
-                let mut tentative_new_guard = self.clone();
+                // We are in map but would run into an obstacle, so changing orientation of original and advancing works.
                 for _ in 0..3 {
+                    let mut tentative_new_guard = self.clone();
                     tentative_new_guard.rotate();
                     let ( new_x, new_y ) = tentative_new_guard.advance_coords();
                     tentative_new_guard.x = new_x;
@@ -303,7 +303,10 @@ fn main() {
                     cloned_map_matrix.set_char(block_x, block_y, 'O');
                     match simulate_guard(&mut cloned_map_matrix) {
                         GuardResult::MovedOffMap => (),
-                        GuardResult::InLoop => loops_found += 1,
+                        GuardResult::InLoop => {
+                            loops_found += 1;
+                            println!("Loop found at ({}, {})\n {}", block_x, block_y, cloned_map_matrix);
+                        }
                     }
                 }
             }
