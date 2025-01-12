@@ -169,6 +169,20 @@ impl Obstacle for MapMatrix {
     }
 }
 
+impl MapMatrix {
+    fn count_guard_spaces(&self) -> usize {
+        let mut count = 0;
+        for row in &self.matrix {
+            for &cell in row {
+                if is_guard(cell).is_some() {
+                    count += 1;
+                }
+            }
+        }
+        count
+    }
+}
+
 fn is_guard(the_char: char) -> Option<Direction> {
     Direction::from_char(the_char)
 }
@@ -246,7 +260,7 @@ fn main() {
 
         println!("\nFINAL map_matrix: \n{}", map_matrix);
 
-
+        println!("Number of guard visited spaces: {}", map_matrix.count_guard_spaces());
     }
 }
 
