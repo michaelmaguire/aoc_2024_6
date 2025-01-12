@@ -77,6 +77,9 @@ impl Guard {
         (new_x, new_y)
     }
 
+    fn rotate(&mut self) {
+        self.orientation = self.orientation.rotate();
+    }
 
     // As termination condition, returns same position and orientation if we cannot move or we went off the map.
     fn move_guard(self, map_matrix: &MapMatrix) -> Self {
@@ -91,7 +94,7 @@ impl Guard {
                 // We are in map but would ry into an obstacle, so changing orientation of original and advancing works.
                 let mut tentative_new_guard = self.clone();
                 for _ in 0..3 {
-                    tentative_new_guard.orientation.rotate();
+                    tentative_new_guard.rotate();
                     let ( new_x, new_y ) = tentative_new_guard.advance_coords();
                     tentative_new_guard.x = new_x;
                     tentative_new_guard.y = new_y;
