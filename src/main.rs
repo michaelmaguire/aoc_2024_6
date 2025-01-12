@@ -224,6 +224,43 @@ impl Clone for MapMatrix {
     }    
 }
 
+enum GuardResult {
+    MovedOffMap,
+    InLoop,
+}
+
+fn simulate_guard(map_matrix: &mut MapMatrix) -> GuardResult {
+
+    let mut the_guard = map_matrix.find_guard().unwrap();
+
+    let max_allowed_iterations = map_matrix.height() * map_matrix.width();
+    let mut iterations: usize = 0;
+    loop {
+        //println!("Analyzing guard: {the_guard}");
+        // Add your analysis logic here
+        let new_guard = the_guard.move_guard(&map_matrix);
+        if new_guard != the_guard {
+            //println!("Guard moved from {} to {}", the_guard, new_guard);
+            // Mark where we visited.
+            map_matrix.set_char(new_guard.x, new_guard.y, new_guard.orientation.to_char());
+            iterations += 1;
+            if iterations > max_allowed_iterations {
+                //println!("Guard did not stop after {} iterations", max_allowed_iterations);
+                return GuardResult::InLoop;
+            }                
+        } else {
+            //println!("Guard did not move");
+            return GuardResult::MovedOffMap;
+        }
+        the_guard = new_guard;
+        //println!("\nmap_matrix: \n{}", map_matrix);
+    }
+
+}
+
+
+
+
 fn main() {
     println!("Hello, aoc_2024_6!");
 
@@ -239,26 +276,9 @@ fn main() {
 
         println!("\nmap_matrix: \n{}", map_matrix);
 
-        let mut the_guard = map_matrix.find_guard().unwrap();
-        println!("Guard: {the_guard}");
-        
-        loop {
-            //println!("Analyzing guard: {the_guard}");
-            // Add your analysis logic here
-            let new_guard = the_guard.move_guard(&map_matrix);
-            if new_guard != the_guard {
-                println!("Guard moved from {} to {}", the_guard, new_guard);
-                // Mark where we visited.
-                map_matrix.set_char(new_guard.x, new_guard.y, new_guard.orientation.to_char());
-            } else {
-                println!("Guard did not move");
-                break;
-            }
-
-            the_guard = new_guard;
-
-            //println!("\nmap_matrix: \n{}", map_matrix);
-
+        match simulate_guard(&mut map_matrix) {
+            GuardResult::MovedOffMap => println!("Guard moved off map"),
+            GuardResult::InLoop => println!("Guard in loop"),
         }
 
         println!("\nFINAL map_matrix: \n{}", map_matrix);
