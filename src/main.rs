@@ -9,18 +9,14 @@ struct MapMatrix {
     
 }
 
-#[derive(Clone, Copy, Debug, Eq)]
+#[derive(Clone, Copy, Eq, PartialEq)]
 enum Direction {
     North,
     East,
     South,
     West,
 }
-impl PartialEq for Direction {
-    fn eq(&self, other: &Self) -> bool {
-        *self as u8 == *other as u8
-    }
-}
+
 impl Direction {
     fn from_char(c: char) -> Option<Self> {
         match c {
@@ -58,24 +54,17 @@ impl fmt::Display for Direction {
     }
 }
 
-#[derive(Copy, Eq, Clone)]
+#[derive(Copy, Eq, Clone, PartialEq)]
 struct Guard {
     x: usize,
     y: usize,
     orientation: Direction,
 }
-impl fmt::Debug for Guard {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> Result<(), fmt::Error> {
-        write!(f, "Guard {{ x: {}, y: {}, orientation: '{}' }}", self.x, self.y, self.orientation)
+impl fmt::Display for Guard {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "Guard at ({}, {}), facing '{}'", self.x, self.y, self.orientation)
     }
 }
-
-impl PartialEq for Guard {
-    fn eq(&self, other: &Self) -> bool {
-        self.x == other.x && self.y == other.y && self.orientation == other.orientation
-    }
-}
-
 
 impl Guard {
     fn advance_coords(&self) -> (usize, usize){
@@ -122,7 +111,7 @@ impl Guard {
 
 
 
-impl fmt::Debug for MapMatrix {
+impl fmt::Display for MapMatrix {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> Result<(), fmt::Error> {
         let height = self.matrix.len();
         let width = self.matrix[0].len();
@@ -231,17 +220,17 @@ fn main() {
             map_matrix.push(characters);
         }
 
-        println!("\nmap_matrix: \n{:?}", map_matrix);
+        println!("\nmap_matrix: \n{}", map_matrix);
 
         let mut the_guard = map_matrix.find_guard().unwrap();
-        println!("Guard: {:?}", the_guard);
+        println!("Guard: {the_guard}");
         
         loop {
-            println!("Analyzing guard: {:?}", the_guard);
+            println!("Analyzing guard: {the_guard}");
             // Add your analysis logic here
             let new_guard = the_guard.move_guard(&map_matrix);
             if new_guard != the_guard {
-                println!("Guard moved from {:?} to {:?}", the_guard, new_guard);
+                println!("Guard moved from {} to {}", the_guard, new_guard);
                 // Mark where we visited.
                 map_matrix.set_char(new_guard.x, new_guard.y, new_guard.orientation.to_char());
             } else {
@@ -251,11 +240,11 @@ fn main() {
 
             the_guard = new_guard;
 
-            println!("\nmap_matrix: \n{:?}", map_matrix);
+            println!("\nmap_matrix: \n{}", map_matrix);
 
         }
 
-        println!("\nFINAL map_matrix: \n{:?}", map_matrix);
+        println!("\nFINAL map_matrix: \n{}", map_matrix);
 
 
     }
